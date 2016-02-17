@@ -59,8 +59,9 @@ var authRequest = require('./lib/wcm-authenticated-request'),
  * These will reset to 0 when the operation(s) is completed.
  */
 var progCounter = 0, progGoal = 0;
-init = function(host, port, contentPath, user, password, secure, wcmDir) {
+init = function(host, port, contentPath, user, password, secure, wcmDir, options) {
     debugLogger.trace("init:: host::"+host +" port::" + port + "contentPath::" + contentPath + "user::" + user + "secure::" + secure + "wcmDir::" + wcmDir);
+    var project;
     wcmRequests.clearFolderMap();
     wcmCwd = wcmDir + Path.sep;
     curUser = user;
@@ -69,7 +70,9 @@ init = function(host, port, contentPath, user, password, secure, wcmDir) {
     curPort = port;
     curContentPath = contentPath;
     curSecure = secure;
-    return authRequest.init(host, port, user, password, contentPath, secure);
+    if(options && options.project)
+        project = options.project;
+    return authRequest.init(host, port, user, password, contentPath, secure, project);
 }, createLibrary = function(libTitle, enabled, allowDeletion, includeDefaultItems){
     var deferred = Q.defer(), doRequest = function(libTitle, enabled, allowDeletion, includeDefaultItems) {
         wcmRequests.createLibrary(libTitle, enabled, allowDeletion, includeDefaultItems).then(function(library) {
@@ -99,10 +102,6 @@ init = function(host, port, contentPath, user, password, secure, wcmDir) {
             libraries.push(library);
         });
         return libraries;
-    }, function(err) {
-        debugLogger.error("getAllLibraries::err::"+err);
-        eventEmitter.emit("error", err, "getAllLibraries::err::"+err);
-        throw err;
     });
 },libIsAvailable = function(libTitle){
    var deferred = Q.defer(), doRequest = function(libTitle){
@@ -183,15 +182,19 @@ init = function(host, port, contentPath, user, password, secure, wcmDir) {
                             pullType(options, wcmRequests.wcmTypes.fileComponent, libTitle, "", map).then(function(count) {
                                 totalCount += count;
     
+/*
                             eventEmitter.emit("pullingType", libTitle, wcmRequests.wcmTypes.contentTemplate);
                             pullType(options, wcmRequests.wcmTypes.contentTemplate, libTitle, ".ct", map).then(function(count) {
                                 totalCount += count;
+*/
                             eventEmitter.emit("pullingType", libTitle, wcmRequests.wcmTypes.referenceComponent);
                             pullType(options, wcmRequests.wcmTypes.referenceComponent, libTitle, ".ref", map).then(function(count) {
                                 totalCount += count;
+/*
                             eventEmitter.emit("pullingType", libTitle, wcmRequests.wcmTypes.jspComponent);
                             pullType(options, wcmRequests.wcmTypes.jspComponent, libTitle, ".jsp", map).then(function(count) {
                                 totalCount += count;
+*/
                             eventEmitter.emit("pullingType", libTitle, wcmRequests.wcmTypes.dateComponent);
                             pullType(options, wcmRequests.wcmTypes.dateComponent, libTitle, ".date", map).then(function(count) {
                                 totalCount += count;
@@ -257,21 +260,25 @@ init = function(host, port, contentPath, user, password, secure, wcmDir) {
                                 deferred.reject(err);
                                 eventEmitter.emit("error", err, "pullLibrary::dateComponent::err::"+err);
                             });
+/*
                             }, function(err) {
                                 debugLogger.error("pullLibrary::jspComponent::err::"+err);
                                 deferred.reject(err);
                                 eventEmitter.emit("error", err, "pullLibrary::jspComponent::err::"+err);
                             });
+*/
                             }, function(err) {
                                 debugLogger.error("pullLibrary::referenceComponent::err::"+err);
                                 deferred.reject(err);
                                 eventEmitter.emit("error", err, "pullLibrary::referenceComponent::err::"+err);
                             });
+/*
                             }, function(err) {
                                 debugLogger.error("pullLibrary::contentTemplate::err::"+err);
                                 deferred.reject(err);
                                 eventEmitter.emit("error", err, "pullLibrary::contentTemplate::err::"+err);
                             });
+*/
                             }, function(err) {
                                 debugLogger.error("pullLibrary::fileComponent::err::"+err);
                                 deferred.reject(err);
@@ -318,7 +325,7 @@ init = function(host, port, contentPath, user, password, secure, wcmDir) {
     return deferred.promise;
 }, pushLibrary = function(libTitle, bForce, options) {
     debugLogger.trace("pushLibrary::library name::"+libTitle, + " force::" + bForce);
-    var deferred = Q.defer(), doRequest = function(libTitle, bForce) {
+    var deferred = Q.defer(), doRequest = function(libTitle, bForce, options) {
         if(!fs.existsSync(wcmCwd + libTitle))
             return deferred.reject('Library folder ' + wcmCwd + libTitle + ' does not exisit on client');
         libIsAvailable(libTitle).then(function(available){
@@ -382,12 +389,14 @@ init = function(host, port, contentPath, user, password, secure, wcmDir) {
                     } else if (ext== ".css") {
                         itemType = wcmRequests.wcmTypes.styleSheetComponent;
                     } else if (ext == ".txt") {
+ /*
                         if(file.indexOf(wcmRequests.wcmExts.LibraryJSPComponent) != -1){
-                            name = name.substring(0, name.indexOf(wcmRequests.wcmExts.LibraryJSPComponent.substr(0,wcmRequests.wcmExts.LibraryJSPComponent.indexOf('.'))));
-                            itemType = wcmRequests.wcmTypes.jspComponent;
-                        }
-                        else
-                        if(file.indexOf(wcmRequests.wcmExts.LibraryDateComponent) != -1){
+                             name = name.substring(0, name.indexOf(wcmRequests.wcmExts.LibraryJSPComponent.substr(0,wcmRequests.wcmExts.LibraryJSPComponent.indexOf('.'))));
+                             itemType = wcmRequests.wcmTypes.jspComponent;
+                         }
+                         else
+ */
+                         if(file.indexOf(wcmRequests.wcmExts.LibraryDateComponent) != -1){
                             name = name.substring(0, name.indexOf(wcmRequests.wcmExts.LibraryDateComponent.substr(0,wcmRequests.wcmExts.LibraryDateComponent.indexOf('.'))));
                             itemType = wcmRequests.wcmTypes.dateComponent;
                         }
@@ -427,9 +436,11 @@ init = function(host, port, contentPath, user, password, secure, wcmDir) {
                         if(file.indexOf(metadataSuffix) != -1)
                             itemType = wcmRequests.wcmTypes.metaData;
                         else
+/*
                             if(file.indexOf(elementSuffix) != -1)
                                 itemType = wcmRequests.wcmTypes.contentTemplate;
                             else
+*/
                                 itemType = wcmRequests.wcmTypes.fileComponent;
                     }
                     else  {
@@ -455,15 +466,19 @@ init = function(host, port, contentPath, user, password, secure, wcmDir) {
     
             finder.on('end', function() {
                 // console.log('fileList ', fileList);
-                pushFiles(fileList, libTitle).then(function() {
+                utils.setLoggerPushFileName(wcmCwd + libTitle + '/push.log');
+                utils.loggerPush.log('Push to server: ' + curHost + ' on ' +  new Date().toJSON().slice(0,10) + '\n');
+                pushFiles(fileList, libTitle, options).then(function() {
                     var libSettings = utils.getSettings(wcmCwd + libTitle + Path.sep);
                     libSettings.datePushed = libSettings.dateUpdated = Date().toLocaleString();
                     libSettings.timePushed = Date.now();
                     libSettings.serverPushed = curHost + curContentPath;
                     utils.setSettings(wcmCwd + libTitle + Path.sep, libSettings);
                     deferred.resolve(fileList);
+                    utils.loggerPush.log('Push to server: ' + curHost + ' finished\n');
                     debugLogger.trace("pushLibrary::library name::"+libTitle, + " settings::" + libSettings);
                 }, function(err) {
+                    utils.loggerPush.log('Push to server: ' + curHost + ' failed  error' + err);
                     debugLogger.error("pushLibrary::err::"+err);
 	                deferred.reject(err);
                     eventEmitter.emit("error", err, "pushLibrary::err::"+err);
@@ -476,7 +491,7 @@ init = function(host, port, contentPath, user, password, secure, wcmDir) {
                 eventEmitter.emit("error", err, "pullLibrary::err::"+err);
         });
     };
-    doRequest(libTitle, bForce);
+    doRequest(libTitle, bForce, options);
     return deferred.promise;
 }, compare = function X(a, b) {
     a = wcmItem.getPath(a);
@@ -489,6 +504,19 @@ init = function(host, port, contentPath, user, password, secure, wcmDir) {
 }, getSettings = function(libTitle) {
     debugLogger.trace("getSettings::libTitle::" + libTitle);
     return utils.getSettings(wcmCwd + libTitle + Path.sep);
+}, getProjects = function() {
+    var projects = [];
+    return wcmRequests.getAllProjects().then(function(items) {
+       debugLogger.trace("getAllProjects::projects count::"+items.length);
+       items.forEach(function(project) {
+            projects.push(project);
+        });
+        return projects;
+    }, function(err) {
+        debugLogger.error("getAllProjects::err::"+err);
+        eventEmitter.emit("error", err, "getAllProjects::err::"+err);
+        throw err;
+    });
 };
 
 function createFolder(folderName) {
@@ -504,21 +532,24 @@ function createFolder(folderName) {
     };
 }
 
-function pushFiles(fileList, libTitle) {
+function pushFiles(fileList, libTitle, options) {
     debugLogger.trace('pushFiles::pushing ' + fileList.length + ' files');
     progGoal += fileList.length;
     var initialValue = Promise.resolve();
     return fileList.reduce(function(soFar, itemToPush) {
         return soFar.then(function() {
             progCounter++;
+            utils.loggerPush.log('File: ' + itemToPush.file + '\nType: ' + itemToPush.itemType) +'\n';
             eventEmitter.emit("pushed", libTitle || "", itemToPush);
             if(itemToPush.itemType == wcmRequests.wcmTypes.metaData)
-                return wcmRequests.updateWcmItemMetaData(itemToPush.file);
+                return wcmRequests.updateWcmItemMetaData(itemToPush.file, options);
             if(itemToPush.itemType == wcmRequests.wcmTypes.element)
-                return updateWcmElementsfromFile(itemToPush);
+                return updateWcmElementsfromFile(itemToPush, options);
+/*
             if(itemToPush.itemType == wcmRequests.wcmTypes.contentTemplate)
-                return wcmRequests.updateWcmElementsData(itemToPush.file);
-            return wcmRequests.updateWcmItemFromPath(itemToPush.itemType, itemToPush.dir + Path.sep + itemToPush.name, itemToPush.file);
+                return wcmRequests.updateWcmElementsData(itemToPush.file, options);
+*/
+            return wcmRequests.updateWcmItemFromPath(itemToPush.itemType, itemToPush.dir + Path.sep + itemToPush.name, itemToPush.file, options);
         }, function(err){
             debugLogger.error("pushType::err::"+err);
             eventEmitter.emit("error", err, "pushLibrary::err::"+err);
@@ -544,7 +575,7 @@ function pullType(options, type, libTitle, extension, map) {
 function isTrialComponent(type){
     return (    
     type == wcmRequests.wcmTypes.referenceComponent ||
-    type == wcmRequests.wcmTypes.jspComponent ||
+//    type == wcmRequests.wcmTypes.jspComponent ||
     type == wcmRequests.wcmTypes.linkComponent ||
     type == wcmRequests.wcmTypes.numericComponent ||
     type == wcmRequests.wcmTypes.customWorkflowAction ||
@@ -560,7 +591,7 @@ function pullTypeParallel(options, type, libTitle, extension, map) {
          deferred.resolve(0);
     }
     else if (includeOption(options, type)) {
-        wcmRequests.getWcmItemsOfType(type, libTitle).then(function(entries) {
+        wcmRequests.getWcmItemsOfType(type, libTitle, options).then(function(entries) {
             var promises = [];
             progGoal += entries.length;
             entries.forEach(function(entry) {
@@ -607,7 +638,7 @@ function pullTypeSequential(options, type, libTitle, extension, map) {
         deferred.resolve(0);
     }
     else if (includeOption(options, type)) {
-        wcmRequests.getWcmItemsOfType(type, libTitle).then(function(entries) {
+        wcmRequests.getWcmItemsOfType(type, libTitle, options).then(function(entries) {
             progGoal += entries.length;
             if (entries.length == 0) {
                 deferred.resolve(0);
@@ -686,6 +717,7 @@ function updateLocalFile(options, libTitle, data, extension, map){
         }
         fs.writeFileSync(path + extension, cData.value, "binary");
     }
+/*
     else if(wcmRequests.wcmTypes.contentTemplate == wtype){
         var elements = data.elements.content.content.elements.element;
         if(elements){
@@ -708,13 +740,16 @@ function updateLocalFile(options, libTitle, data, extension, map){
             });
             fs.writeFileSync(path + elementSuffix, JSON.stringify(data.elements));
         }
-    }
+    }*/
+
     else if(wcmRequests.wcmTypes.dateComponent == wtype){
         fs.writeFileSync(path + wcmRequests.wcmExts[wtype], JSON.stringify(cData.date));
     }
+/*
     else if(wcmRequests.wcmTypes.jspComponent == wtype){
         fs.writeFileSync(path + wcmRequests.wcmExts[wtype], JSON.stringify(cData.jsp));
-    }
+    }*/
+
     else if(wcmRequests.wcmTypes.referenceComponent == wtype){
         fs.writeFileSync(path + wcmRequests.wcmExts[wtype], cData.reference);
     }
@@ -764,7 +799,7 @@ function includeOption(options, type) {
  * @param FileName which contains the contents of the objects metadata 
  * @returns a Promise that returns  the updated object
  */
-function updateWcmElementsfromFile(itemToPush){
+function updateWcmElementsfromFile(itemToPush, options){
        debugLogger.trace('updateWcmElementsData:: fileName::' + itemToPush.toString());
         try{
             var pfName = wcmCwd + itemToPush.dir + '.json';
@@ -779,7 +814,7 @@ function updateWcmElementsfromFile(itemToPush){
                 wcmRequests.setElementData(element.type,element.data,value);
                 fs.writeFileSync(pfName,JSON.stringify(pItem));
             }
-            return wcmRequests.updateWcmElementsData(pfName);
+            return wcmRequests.updateWcmElementsData(pfName, options);
         }
         catch(e){
             debugLogger.error("updateWcmElementsfromFile ::err::"+e);
@@ -809,6 +844,7 @@ exports.pushLibrary = pushLibrary;
 exports.getSettings = getSettings;
 exports.getProgress = getProgress;
 exports.createLibrary = createLibrary;
+exports.getProjects = getProjects;
 
 exports.getEventEmitter = function getEventEmitter() {
   return eventEmitter;

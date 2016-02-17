@@ -12,6 +12,8 @@ var tracer = require("tracer"),
     debugNames = debugEnvironmentVar.toUpperCase().split(','),
     debugFunctions = {},
     settings = {},
+    pushFileLog = './file.log',
+    pullFileLog = './file.log',
     fs = require("fs");
 
 var debugLogger = function(moduleName) {
@@ -37,7 +39,24 @@ var debugLogger = function(moduleName) {
 };
 
 var utilLogger = debugLogger('wcm-utils');
-
+var setLoggerPushFileName = function(fileName){
+   pushFileLog = fileName;
+};
+var loggerPush = require('tracer').console({
+    format: '{{message}}',
+    transport : function(data) {
+        fs.appendFile(pushFileLog, data.output + '\n');
+    }
+});
+var setLoggerPullFileName = function(fileName){
+   pullFileLog = fileName;
+};
+var loggerPull = require('tracer').console({
+    format: '{{message}}',
+    transport : function(data) {
+        fs.appendFile(pullFileLog, data.output + '\n');
+    }
+});
 var getSettings = function(cwd) {
   cwd = cwd || process.cwd();
   var settings = {};
@@ -75,6 +94,10 @@ getMergerdOptions = function(options, settings){
 };
 
 
+module.exports.loggerPush = loggerPush;
+module.exports.setLoggerPushFileName = setLoggerPushFileName;
+module.exports.loggerPull = loggerPull;
+module.exports.setLoggerPullFileName = setLoggerPullFileName;
 module.exports.debugLogger = debugLogger;
 module.exports.getSettings = getSettings;
 module.exports.setSettings = setSettings;

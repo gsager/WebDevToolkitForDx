@@ -13,6 +13,7 @@ var debugLogger = require('./utils').debugLogger('wcm-request');
 var currentRequestLevel = 0;    // Track number of concurrent requests
 var currentRequestUrl = '';
 var warnParallel = true;
+var isVirtualPortal = false;
 
 //var success_http_code = 200;
 var httpGetHelper = function(options) {
@@ -25,13 +26,15 @@ var httpGetHelper = function(options) {
         var reqGet = http.request(options, function(response) {
             if(options.headers && options.headers.ContentType && options.headers.ContentType){
                 response.setEncoding('binary');
-                debugLogger.trace(options.headers.ContentType + " read binary");
+                debugLogger.trace(options.headers.ContentType + ' read binary');
             }
             if (response.statusCode == 404) {
                 var err = getErrorFromResponse(null, response);
-                debugLogger.error("httpGetHelper::err::" + err);
+                debugLogger.error('httpGetHelper::err::' + err);
                 deferred.reject(err);
             } else if (response.statusCode > 300 && response.statusCode < 400 && response.headers.location) {
+                if(options.path.indexOf('service-document')!= -1  && response.headers.location.indexOf(gInitialContentHandlerPath) == -1)
+                    return deferred.reject('Service document not found');
                 options.path = response.headers.location;
                 httpGetHelper(options).then(function(data) {
                     deferred.resolve(data);
@@ -42,7 +45,7 @@ var httpGetHelper = function(options) {
                         deferred.resolve(null);
                     } else {
                         err = getErrorFromResponse(err);
-                        debugLogger.error("httpGetHelper::err::" + err);
+                        debugLogger.error('httpGetHelper::err::' + err);
                         deferred.reject(err);
                     }
                 });
@@ -65,7 +68,7 @@ var httpGetHelper = function(options) {
         reqGet.end();
         reqGet.on('error', function(e) {
             var err = getErrorFromResponse(e);
-            debugLogger.error("httpGetHelper::err::" + err);
+            debugLogger.error('httpGetHelper::err::' + err);
             deferred.reject(err);
         });
     };
@@ -83,7 +86,7 @@ var httpPostHelper = function(options, postData) {
         var reqPost = http.request(options, function(response) {
             if (response.statusCode == 404) {
                 var err = getErrorFromResponse(null, response);
-                debugLogger.error("httpPostHelper::err::" + err);
+                debugLogger.error('httpPostHelper::err::' + err);
                 deferred.reject(err);
             } else if (response.statusCode > 300 && response.statusCode < 400 && response.headers.location) {
                 options.path = response.headers.location;
@@ -96,10 +99,10 @@ var httpPostHelper = function(options, postData) {
                         deferred.resolve(null);
                     } else {
                         err = getErrorFromResponse(err);
-                        debugLogger.error("httpPostHelper::err::" + err);
+                        debugLogger.error('httpPostHelper::err::' + err);
                         deferred.reject(err);
                     }
-                }).done();
+                });
             } else {
                 response.on('data', function(chunk) {
                     body += chunk;
@@ -128,7 +131,7 @@ var httpPostHelper = function(options, postData) {
 };
 
 var getLTPAToken = function(user, pass, options, postData) {
-    var post_data = "j_username=" + user + "&j_password=" + pass;
+    var post_data = 'j_username=' + user + '&j_password=' + pass;
 
     // the post options
     // authenticate for VP uses the base portal
@@ -155,17 +158,17 @@ var getLTPAToken = function(user, pass, options, postData) {
                 optionspost.rejectUnauthorized = false;
             }
             var reqPost = http.request(optionspost, function(response) {
-                if (!response.headers["set-cookie"]) {
-                    var err =  getErrorFromResponse("Authentication error");
-                    debugLogger.error("getLTPAToken::err::" + err);
+                if (!response.headers['set-cookie']) {
+                    var err =  getErrorFromResponse('Authentication error');
+                    debugLogger.error('getLTPAToken::err::' + err);
                     deferred.reject(err);
                     return;
                 }
 
-                authCookie = response.headers["set-cookie"][0];
+                authCookie = response.headers['set-cookie'][0];
                 // console.log('cookies: ' +
-                // JSON.stringify(response.headers["set-cookie"], null, 2));
-                var semicolonIndex = authCookie.indexOf(";", 0);
+                // JSON.stringify(response.headers['set-cookie'], null, 2));
+                var semicolonIndex = authCookie.indexOf(';', 0);
                 if (semicolonIndex > -1) {
                     authCookie = authCookie.substring(0, semicolonIndex);
                 }
@@ -179,12 +182,11 @@ var getLTPAToken = function(user, pass, options, postData) {
                             deferred.resolve(null);
                         } else {
                             err = getErrorFromResponse(err);
-                            debugLogger.error("getLTPAToken::err::" + err);
+                            debugLogger.error('getLTPAToken::err::' + err);
                             deferred.reject(err);
 
                         }
                     });
-                    // .done();
                 } else {
                     httpPostHelper(options, postData).then(function(data) {
                         deferred.resolve(data);
@@ -195,7 +197,7 @@ var getLTPAToken = function(user, pass, options, postData) {
                             deferred.resolve(null);
                         } else {
                             err = getErrorFromResponse(err);
-                            debugLogger.error("getLTPAToken::err::" + err);
+                            debugLogger.error('getLTPAToken::err::' + err);
                             deferred.reject(err);
 
                         }
@@ -205,12 +207,12 @@ var getLTPAToken = function(user, pass, options, postData) {
             reqPost.write(post_data);
             reqPost.end();
             reqPost.on('error', function(e) {
-                debugLogger.error("getLTPAToken::err::" + e);
+                debugLogger.error('getLTPAToken::err::' + e);
                 deferred.reject(e);
             });
         } catch (err) {
             // catches system errors such as port out of range
-            debugLogger.error("getLTPAToken::err::" + err);
+            debugLogger.error('getLTPAToken::err::' + err);
             deferred.reject(err);
         }
     };
@@ -251,7 +253,7 @@ var authenticatedRequest = function(user, pass, options, postData) {
     var deferred = Q.defer(), authenticate = function(user, pass, options, postData) {
         // debugLogger.trace('authenticatedRequest:: user::' + user + ' options::', options, ' postData::' + postData);
         // sometimes the content HandlerPath might be part of the uri already if not add
-        if (options.path.lastIndexOf(options.contentHandlerPath, 0) != 0)
+        if (options.path.lastIndexOf(gInitialContentHandlerPath, 0) != 0)
             options.path = options.contentHandlerPath + options.path;
         debugLogger.trace('authenticated-request for ', options.path);
         checkStartRequest(options.path);
@@ -276,7 +278,7 @@ var authenticatedRequest = function(user, pass, options, postData) {
                             // resolve this promise
                             deferred.resolve(null);
                         } else {
-                            debugLogger.error("authenticatedRequest::err::" + err);
+                            debugLogger.error('authenticatedRequest::err::' + err);
                             deferred.reject(err);
                         }
                     });
@@ -293,7 +295,7 @@ var authenticatedRequest = function(user, pass, options, postData) {
                             deferred.resolve(null);
                         } else {
                             err = getErrorFromResponse(err);
-                            debugLogger.error("authenticatedRequest::err::" + err);
+                            debugLogger.error('authenticatedRequest::err::' + err);
                             deferred.reject(err);
 
                         }
@@ -306,7 +308,7 @@ var authenticatedRequest = function(user, pass, options, postData) {
                     // resolve this promise
                     deferred.resolve(null);
                 } else {
-                    debugLogger.error("authenticatedRequest::err::" + err);
+                    debugLogger.error('authenticatedRequest::err::' + err);
                     deferred.reject(err);
                 }
             });
@@ -323,7 +325,7 @@ var authenticatedRequest = function(user, pass, options, postData) {
                         // resolve this promise
                         deferred.resolve(null);
                     } else {
-                        debugLogger.error("authenticatedRequest::err::" + err);
+                        debugLogger.error('authenticatedRequest::err::' + err);
                         deferred.reject(err);
                     }
                 });
@@ -334,7 +336,7 @@ var authenticatedRequest = function(user, pass, options, postData) {
                     deferred.resolve(data);
                 }, function(err) {
                     checkEndRequest();
-                    if(options.path.indexOf("Prototype") && err.indexOf("Generic_Error_0")){
+                     if(options.path.indexOf('Prototype') != -1 && err.toString().indexOf('GENERIC_ERROR_0')!= -1){
                         deferred.resolve(postData);
                     }
                     else if (err.statusCode != undefined && err.statusCode == success_http_code) {
@@ -344,7 +346,7 @@ var authenticatedRequest = function(user, pass, options, postData) {
                     } else {
                         debugLogger.error(err);
                         err = getErrorFromResponse(err);
-                        debugLogger.error("authenticatedRequest::err::" + err);
+                        debugLogger.error('authenticatedRequest::err::' + err);
                         deferred.reject(err);
 
                     }
@@ -368,7 +370,7 @@ var getJson = function(uri) {
             secure : globalSecure,
             method : 'GET',
             headers : {
-                Accept : "application/json"
+                Accept : 'application/json'
             }
         };
 
@@ -380,8 +382,8 @@ var getJson = function(uri) {
                 // resolve this promise
                 deferred.resolve(null);
             } else {
-                debugLogger.error("getJson::err::" + err);
                 deferred.reject(err);
+                debugLogger.error('getJson::err::' + err);
             }
         });
     };
@@ -400,13 +402,22 @@ var setJson = function(uri, postData, method) {
                 'accept': 'application/json'
                 };
         }
-        else{
-             headers = {
-                'Content-Type' : 'application/atom+xml',
-                'Content-Length' : postData.length,
-                'Accept' : "application/json"
-            };
-        }
+        else
+        if(postData.length != 0)
+            {
+                 headers = {
+                    'Content-Type' : 'application/atom+xml',
+                    'Content-Length' : postData.length,
+                    'Accept' : 'application/json'
+                };
+            }
+            else
+            {
+                headers = {
+                  'Accept': 'application/json',
+                  'Content-Type': 'text/plain'
+                };
+            }
         if(method == undefined)
             method = 'Post';
         var callOptions = {
@@ -427,11 +438,10 @@ var setJson = function(uri, postData, method) {
                 deferred.resolve(null);
             } else {
                 err = getErrorFromResponse(err);
-                debugLogger.error("setJson::err::" + err);
+                debugLogger.error('setJson::err::' + err);
                 deferred.reject(err);
-
             }
-        }).done();
+        });
     };
     authenticate(uri, postData);
     return deferred.promise;
@@ -461,11 +471,11 @@ var setContent = function(uri, contentType, data) {
                 deferred.resolve(null);
             } else {
                 err = getErrorFromResponse(err);
-                debugLogger.error("setContent::err::" + err);
+                debugLogger.error('setContent::err::' + err);
                 deferred.reject(err);
 
             }
-        }).done();
+        });
     };
     authenticate(uri, contentType, data);
     return deferred.promise;
@@ -494,10 +504,10 @@ var getContent = function(uri, contentType) {
                 deferred.resolve(null);
             } else {
                 err = getErrorFromResponse(err);
-                debugLogger.error("getContent::err::" + err);
+                debugLogger.error('getContent::err::' + err);
                 deferred.reject(err);
             }
-        }).done();
+        });
     };
     authenticate(uri, contentType);
     return deferred.promise;
@@ -510,20 +520,71 @@ var globalUser = '';
 var globalPassword = '';
 var globalSecure = false;
 var authCookie = null;
+var gInitialContentHandlerPath;
+var nonProjectContentHandlerPath;
 
-var init = function(host, port, user, password, contentHandlerPath, secure) {
+var init = function(host, port, user, password, contentHandlerPath, secure, project) {
     authCookie = null;
     if(secure == undefined)
         secure = false;
     http = secure ? require('https') : require('http');
     debugLogger.trace('init:: host::' + host + ' port::' + port + ' user::' + user + ' contentHandlerPath::' + contentHandlerPath + ' secure::' + secure);
-    var deferred = Q.defer(), initialize = function(contentHandlerPath) {
-        var pathComponents = contentHandlerPath.split('/');
+    gInitialContentHandlerPath = contentHandlerPath;
+    var deferred = Q.defer(), doinit = function(contentHandlerPath){
+        globalHost = host;
+        globalPort = port;
+        globalSecure = secure;
+        globalUser = user;
+        globalPassword = password;
+        authCookie = null;
+        initialize(contentHandlerPath).then(function(contentHandlerPath){
+            if (contentHandlerPath != undefined){
+                globalContentHandlerPath = contentHandlerPath;
+                // used for folder creation so folders are not drafts
+                nonProjectContentHandlerPath = globalContentHandlerPath;
+                if(project){
+                    getJson(contentHandlerPath + '/wcmrest/query?type=Project&title=' + encodeURIComponent(project)).then(function(data) {
+                        try {
+                            data = JSON.parse(data);
+                        } catch(e) {
+                        };
+                        if (data.feed.entry != undefined){
+                            var sdContentHandlerPath = contentHandlerPath.slice(gInitialContentHandlerPath.length);
+                            globalContentHandlerPath = gInitialContentHandlerPath + '/$project/' +  encodeURIComponent(data.feed.entry[0].name) + sdContentHandlerPath;
+                            return deferred.resolve('success');
+                        }
+                        else{
+                            debugLogger.trace('init::  project not found');
+                            deferred.reject('project not found');
+                        }
+                    }, function(err) {
+                        debugLogger.trace('init:: err::' + err + ' project not found');
+                        deferred.reject('init:: err::' + err + ' project not found');
+                    });
+                }
+                else{
+                    deferred.resolve('success');
+                }
+            }
+            else
+                deferred.reject('no content path pecified');
+        }, function(err){
+            debugLogger.error('init:: err::' + err + ' service document not found');
+            deferred.reject(err);
+        });
+    };
+    doinit(contentHandlerPath);
+    return deferred.promise;
+    };
+    
+    var  initialize = function(contentHandlerPath) {
+        var deferred = Q.defer(),doinitiatlize = function(contentHandlerPath){
+        isVirtualPortal  = contentHandlerPath.split('/').length > 3;
         // for vitrula portals the last component is the portal context if
-        if(pathComponents.length > 3){
+        if(isVirtualPortal){
             // get the service doc and find the content path for this VP
-             getJson('/!ut/p/model/service-document').then(function(data){
-                globalContentHandlerPath = "";
+             getJson(contentHandlerPath + '/!ut/p/model/service-document').then(function(data){
+                contentHandlerPath = '';
                 // we currently just hget the first service operation that we find and get the relavant part of the hrf
                 var newData = data.slice(data.indexOf('<service:collection') + '<service:collection href="'.length, data.indexOf('</service:collection>'));
                 newData = newData.slice(0,newData.indexOf('"'));
@@ -532,28 +593,23 @@ var init = function(host, port, user, password, contentHandlerPath, secure) {
                 pComp.forEach(function(comp){
                     // skip the first empty component and the last 2 which are from the first drtbicr op that we don't need'
                     if( cur > 0 &&  cur < pComp.length -2)
-                        globalContentHandlerPath = globalContentHandlerPath.concat('/' + comp);
+                        contentHandlerPath = contentHandlerPath.concat('/' + comp);
                     cur++;
                 });
-                deferred.resolve();
-            }, function(err){deferred.reject(err);});
+                deferred.resolve(contentHandlerPath);
+            }, function(err){
+                debugLogger.error('initialize:: ' + err);
+                deferred.reject(err);
+                });
         }
         else
-            deferred.resolve();
+            deferred.resolve(contentHandlerPath);
     };
-    globalHost = host;
-    globalPort = port;
-    globalSecure = secure;
-    if (contentHandlerPath != undefined)
-        globalContentHandlerPath = contentHandlerPath;
-    globalUser = user;
-    globalPassword = password;
-    authCookie = null;
-    initialize(contentHandlerPath);
+    doinitiatlize(contentHandlerPath);
     return deferred.promise;
-};
-
-var getErrorFromResponse = function(err, response) {
+    };
+    
+    var getErrorFromResponse = function(err, response) {
     debugLogger.trace('getErrorFromResponse:: err::' + err + ' response::' + response);
     var error = {};
     if ( err instanceof Error)
@@ -576,6 +632,10 @@ var getErrorFromResponse = function(err, response) {
     return new Error(JSON.stringify(error));
 };
 
+function getNonProjectContentHandler(){
+    return nonProjectContentHandlerPath;
+};
+
 module.exports = {
     init : init,
     getJson : getJson,
@@ -583,5 +643,6 @@ module.exports = {
     setContent : setContent,
     getContent : getContent,
     setWarnParallel: setWarnParallel,
-    getWarnParallel: getWarnParallel
+    getWarnParallel: getWarnParallel,
+    getNonProjectContentHandler: getNonProjectContentHandler
 };
