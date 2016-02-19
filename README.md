@@ -1,9 +1,10 @@
-# Web Developer Toolkit for IBM Digital Experience
+# Web Developer Toolkit for IBM Digital Experience (Project Version)
 This project is an OpenNTF project, and is available under the Apache License V2.0. All other aspects of the project, including contributions, defect reports, discussions, feature requests and reviews are subject to the OpenNTF Terms of Use http://openntf.org/Internal/home.nsf/dx/Terms_of_Use.
 
 This toolkit includes two main areas of functionality:
 - A "Web Developer Dashboard" that provides a user interface for working with Script Portlets, Portal themes, and WCM design elements. The theme support uses the Digital Experience File Sync tool under the covers. The Script Portlet support uses the Script Portlet command line support which must be installed separately on your workstation.
 - A command line tool "dxwcmdesigns" for moving WCM design elements - Presentation Templates and Components - between your local file system and your Portal server. This functionality is also available from the Dashboard.
+- (Note)This version has extra support to work with Portal projects.  It need to have APAR ####### installed that handles updates to drafts that are in a project.  This bug allows the draft to be updated with your changes but the draft is no longer in the project.  A workaround to this issue is to push the changes to the draft and then add the draft back to the project.  Also the project support might not work as you expect if you have customized the workflow. 
 
 # Requirements
 To use these tools you will need:
@@ -15,11 +16,16 @@ To use these tools you will need:
 ## Known issues
 
 The Dashboard tool uses the nw.js package to implement the user interface, and on some versions of Linux there are issues with some of the dependency packages for nw.js.
+```
+Until nw.js is updated to support libudev.so.1. One solution is to use a utility like sed in the directory containing nw:. 
+$ sed -i 's/libudev\.so\.0/libudev.so.1/g' nw
+This will replace the string related to libudev, within the application code, with the new version. Make sure the process completes before tryinh to run nw.
+```
 
 # Installation
 You must first install Node.js.  Node.js version 0.12 is the minimum version and has had the most testing.
 
-Download the digexp-toolkit.zip file from here: https://github.com/OpenNTF/WebDevToolkitForDx/releases/download/v0.1.4/digexp-toolkit.zip
+Download the digexp-toolkit.zip file from here: https://github.com/OpenNTF/gsager/WebDevToolkitForDx/releases/download/v0.1.5/digexp-toolkit.zip
 
 First, extract the file on your workstation. Then if you are on Windows, run
 ```
@@ -132,6 +138,13 @@ The available options are:
 - `-v`, `--verbose`: To get verbose output.
 - `-h`, `--help`: Displays the help for the pull command.
 
+# Notes on project support
+- To use project support for a library you first use the pull the library to your system. This will be the full content of the library.
+- You then navigate into the local folder for this library and add or modify the options to have the project option added to your settings(See below). After doing this all the commands will make your operation work as they do from the Library Explorer.
+- After adding or removing the project from the settings. You should pull the library from the server so the files will reflect the libraries current settings.
+- Items that are added or not currently drafts will be added as drafts when modified and pushed to the server.
+- Items that sre drafts in the same project will be updated.
+
 # Notes on WCM design library support
 The supported WCM types are:
 - HTML Component
@@ -141,10 +154,8 @@ The supported WCM types are:
 - Rich Text Component
 - Presentation Template
 - File Component
-- Content Template(Authoring Template)
 - Date Component (with trial option enabled)
 - Reference Component (with trial option enabled)
-- Jsp Component (with trial option enabled)
 - Link Component  (with trial option enabled)
 - Numeric Component (with trial option enabled)
 - Custom Workflow Action (with trial option enabled)
@@ -171,5 +182,12 @@ There are some options that can be set to control some of the behavior when down
 - pullParallel: If set to true, requests to the server for components are done in parallel wich can speed up the download of large libraries. By default components are synced sequentially.
 - trial: if set any new features that have been added but not fully testes are added
 - include: This is an array of item types that allows you to limit the types of items that will be included in the pushed/pull actions for this library, this list will only support types that are handled by default. It allows you to limit the types to a subset of the supported types.  i.e. Some one that only works on icons could limit it to "LibraryImageComponent"
+- project: If you add this to the settings for the Library it will pulll and push items related to a project.  For project VP Project add "options":{ "project1": "VP Project"}
+- logPush: you can set this to false.  By default it always logs unless you set theis to false. To turn off logging add "options":"logPush": "false"}
+- logPushFileName: you can change this to a filename you want to have the push logs sent to. The default is push.log in the libraries top folder. It can be the same as the pull log file if you want.  The name can be relative or absolute. To set it to your c: add "options":"logPushFileName": "C:/wcmsync.log"} 
+- logPull: you can set this to false.  By default it always logs unless you set theis to false.  To turn off logging add "options":"logPush": "false"}
+- logPullFileName: you can change this to a filename you want to have the pull logs sent to. The default is pull.log in the libraries top folder. It can be the same as the push log file if you want.  The name can be relative or absolute. To set it to your c: add "options":"logPullFileName": "C:/wcmsync.log"}
+
+The log file is always logging pushes and pulls and you are responsible for removing it as needed
 
 To turn on the trial features for all libraries you can set an environment variable DIGEXP_TRIAL=true.

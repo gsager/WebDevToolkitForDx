@@ -43,7 +43,8 @@ var setLoggerPushFileName = function(fileName){
    pushFileLog = fileName;
 };
 var loggerPush = require('tracer').console({
-    format: '{{message}}',
+    format: '{{timestamp}} {{message}}',
+    dateformat : 'mm/dd/yyyy HH:MM',
     transport : function(data) {
         fs.appendFile(pushFileLog, data.output + '\n');
     }
@@ -52,7 +53,8 @@ var setLoggerPullFileName = function(fileName){
    pullFileLog = fileName;
 };
 var loggerPull = require('tracer').console({
-    format: '{{message}}',
+    format: '{{timestamp}} {{message}}',
+    dateformat : 'mm/dd/yyyy HH:MM',
     transport : function(data) {
         fs.appendFile(pullFileLog, data.output + '\n');
     }

@@ -1,6 +1,6 @@
 {
   "name": "digexp-wcm-design",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "WCM Designs",
   "main": "wcmHelper",
   "bin": {
@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "findit": "2.0.0",
-    "graceful-fs": "3.0.6",
+    "graceful-fs": "^4.0.0",
     "hashmap": "2.0.3",
     "prompt": "^0.2.14",
     "q": "1.2.0",

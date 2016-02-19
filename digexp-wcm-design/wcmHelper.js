@@ -128,6 +128,12 @@ init = function(host, port, contentPath, user, password, secure, wcmDir, options
         if(!available)
             deferred.reject(libTitle + ' is not available check for correct server');
         else{
+            if(options == undefined || options.logPullFileName == undefined)
+               utils.setLoggerPullFileName(wcmCwd + libTitle + '/pull.log');
+            else
+                 utils.setLoggerPullFileName(options.logPullFileName);
+            if(options == undefined || options.logPull == undefined || options.logPull == true)
+                utils.loggerPull.log('========== Pulled from server: ' + curHost + ' ==========' + String.fromCharCode(13));
             Q.longStackSupport = true;
             var totalCount = 0;
             var libSettings = utils.getSettings(wcmCwd + libTitle + Path.sep);
@@ -135,7 +141,7 @@ init = function(host, port, contentPath, user, password, secure, wcmDir, options
             createFolder(wcmCwd + libTitle);
             createFolder(wcmCwd + libTitle + Path.sep + wcmRequests.cPresentationTemplates);
             createFolder(wcmCwd + libTitle + Path.sep + wcmRequests.cComponents);
-            createFolder(wcmCwd + libTitle + Path.sep + wcmRequests.cAuthoringTemplates);
+//            createFolder(wcmCwd + libTitle + Path.sep + wcmRequests.cAuthoringTemplates);
             // only do these components if the user turns on trial code
             if(options.trial && options.trial == true){
                 createFolder(wcmCwd + libTitle + Path.sep + wcmRequests.cWorkflowItems);
@@ -230,6 +236,8 @@ init = function(host, port, contentPath, user, password, secure, wcmDir, options
                                     utils.setSettings(wcmCwd + libTitle + Path.sep, libSettings);
                                     deferred.resolve(totalCount);
                                     eventEmitter.emit("pulledLib", libTitle);
+                                    if(options == undefined || options.logPull == undefined || options.logPull == true)
+                                        utils.loggerPull.log('========== Pull from server: ' + curHost + ' finished ==========' + String.fromCharCode(13));
                                 }, function(err) {
                                     debugLogger.error("pullLibrary::richTextComponent::err::"+err);
                                     deferred.reject(err);
@@ -332,6 +340,12 @@ init = function(host, port, contentPath, user, password, secure, wcmDir, options
         if(!available)
             deferred.reject(libTitle + ' is not available check for correct server');
         else{
+            if(options == undefined || options.logPushFileName == undefined)
+                utils.setLoggerPushFileName(wcmCwd + libTitle + '/push.log');
+            else
+                utils.setLoggerPushFileName(options.logPushFileName);
+            if(options == undefined || options.logPush == undefined || options.logPush == true)
+                utils.loggerPush.log('========== Pushed to server: ' + curHost + ' ==========' + String.fromCharCode(13));
             Q.longStackSupport = true;
             var cDate = undefined;
             var libSettings = utils.getSettings(wcmCwd + libTitle + Path.sep);
@@ -466,8 +480,6 @@ init = function(host, port, contentPath, user, password, secure, wcmDir, options
     
             finder.on('end', function() {
                 // console.log('fileList ', fileList);
-                utils.setLoggerPushFileName(wcmCwd + libTitle + '/push.log');
-                utils.loggerPush.log('Push to server: ' + curHost + ' on ' +  new Date().toJSON().slice(0,10) + '\n');
                 pushFiles(fileList, libTitle, options).then(function() {
                     var libSettings = utils.getSettings(wcmCwd + libTitle + Path.sep);
                     libSettings.datePushed = libSettings.dateUpdated = Date().toLocaleString();
@@ -475,10 +487,12 @@ init = function(host, port, contentPath, user, password, secure, wcmDir, options
                     libSettings.serverPushed = curHost + curContentPath;
                     utils.setSettings(wcmCwd + libTitle + Path.sep, libSettings);
                     deferred.resolve(fileList);
-                    utils.loggerPush.log('Push to server: ' + curHost + ' finished\n');
+                    if(options == undefined || options.logPush == undefined || options.logPush == true)
+                        utils.loggerPush.log('========== Push to server: ' + curHost + ' finished ==========' + String.fromCharCode(13));
                     debugLogger.trace("pushLibrary::library name::"+libTitle, + " settings::" + libSettings);
                 }, function(err) {
-                    utils.loggerPush.log('Push to server: ' + curHost + ' failed  error' + err);
+                    if(options == undefined || options.logPush == undefined || options.logPush == true)
+                        utils.loggerPush.log('Push to server: ' + curHost + ' failed  error' + err);
                     debugLogger.error("pushLibrary::err::"+err);
 	                deferred.reject(err);
                     eventEmitter.emit("error", err, "pushLibrary::err::"+err);
@@ -539,7 +553,8 @@ function pushFiles(fileList, libTitle, options) {
     return fileList.reduce(function(soFar, itemToPush) {
         return soFar.then(function() {
             progCounter++;
-            utils.loggerPush.log('File: ' + itemToPush.file + '\nType: ' + itemToPush.itemType) +'\n';
+            if(options == undefined || options.logPush == undefined || options.logPush == true)
+                utils.loggerPush.log('File: ' + itemToPush.file.slice(wcmCwd.length) + '   Type: ' + itemToPush.itemType   + String.fromCharCode(13));
             eventEmitter.emit("pushed", libTitle || "", itemToPush);
             if(itemToPush.itemType == wcmRequests.wcmTypes.metaData)
                 return wcmRequests.updateWcmItemMetaData(itemToPush.file, options);
@@ -680,6 +695,8 @@ function updateLocalFile(options, libTitle, data, extension, map){
     debugLogger.log('pullType::pulled: ' + path);
     var cData = wcmItem.getContent(item);
     var wtype = wcmItem.getType(item);
+    if(options == undefined || options.logPull == undefined || options.logPull == true)
+        utils.loggerPull.log('File: ' + path.slice(wcmCwd.length) + '   Type: ' + wtype + String.fromCharCode(13));
     if (options != undefined && (options.filterComponentId == undefined || options.filterComponentId == true)) {
        if (wtype == wcmRequests.wcmTypes.presentationTemplate || wtype == wcmRequests.wcmTypes.htmlComponent)
             cData.value = cData.value.replace(/Component id="(.*?)"/g, "Component");
