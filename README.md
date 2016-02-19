@@ -4,7 +4,7 @@ This project is an OpenNTF project, and is available under the Apache License V2
 This toolkit includes two main areas of functionality:
 - A "Web Developer Dashboard" that provides a user interface for working with Script Portlets, Portal themes, and WCM design elements. The theme support uses the Digital Experience File Sync tool under the covers. The Script Portlet support uses the Script Portlet command line support which must be installed separately on your workstation.
 - A command line tool "dxwcmdesigns" for moving WCM design elements - Presentation Templates and Components - between your local file system and your Portal server. This functionality is also available from the Dashboard.
-- (Note)This version has extra support to work with Portal projects.  It need to have APAR ####### installed that handles updates to drafts that are in a project.  This bug allows the draft to be updated with your changes but the draft is no longer in the project.  A workaround to this issue is to push the changes to the draft and then add the draft back to the project.  Also the project support might not work as you expect if you have customized the workflow. 
+- (Note)This version has extra support to work with Portal projects.  It needs to have APAR ####### installed that handles updates to drafts that are in a project.  This bug allows the draft to be updated with your changes but the draft is no longer in the project.  A workaround to this issue is to push the changes to the draft and then add the draft back to the project.  Also the project support might not work as you expect if you have customized the workflow. 
 
 # Requirements
 To use these tools you will need:
@@ -139,11 +139,10 @@ The available options are:
 - `-h`, `--help`: Displays the help for the pull command.
 
 # Notes on project support
-- To use project support for a library you first use the pull the library to your system. This will be the full content of the library.
-- You then navigate into the local folder for this library and add or modify the options to have the project option added to your settings(See below). After doing this all the commands will make your operation work as they do from the Library Explorer.
-- After adding or removing the project from the settings. You should pull the library from the server so the files will reflect the libraries current settings.
-- Items that are added or not currently drafts will be added as drafts when modified and pushed to the server.
-- Items that sre drafts in the same project will be updated.
+- To use project support for a library you first use the pull the library to your system. This will be the full content of the published library.
+- You then navigate into the local folder for this library and add or modify the options to have the project option added to your settings (see below for "options" description). After doing this all the commands (from command line tool or from dashboard) will make your operation work as they do from the Library Explorer in the scope of a project.
+- After adding or removing the project from the settings to work with the published library, you should pull the library from the server so the files will reflect the library's current state.
+- When working in project scope, any items that are added or not currently drafts will be added as drafts when modified and pushed to the server. Any items that are drafts in the same project will be updated when you push the files.
 
 # Notes on WCM design library support
 The supported WCM types are:
