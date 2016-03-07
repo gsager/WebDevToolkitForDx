@@ -168,6 +168,7 @@ There are some options that can be set to control some of the behavior when down
     "includeMeta": false,
     "filterComponentId": true,
     "pullParallel": true,
+    
     "trial":true,
     "include":[
        "PresentationTemplate",
@@ -181,7 +182,7 @@ There are some options that can be set to control some of the behavior when down
 - pullParallel: If set to true, requests to the server for components are done in parallel wich can speed up the download of large libraries. By default components are synced sequentially.
 - trial: if set any new features that have been added but not fully testes are added
 - include: This is an array of item types that allows you to limit the types of items that will be included in the pushed/pull actions for this library, this list will only support types that are handled by default. It allows you to limit the types to a subset of the supported types.  i.e. Some one that only works on icons could limit it to "LibraryImageComponent"
-- project: If you add this to the settings for the Library it will pulll and push items related to a project.  For project VP Project add "options":{ "project1": "VP Project"}
+- project: If you add this to the settings for the Library it will pulll and push items related to a project.  For project VP Project add "options":{ "project": "VP Project"}
 - logPush: you can set this to false.  By default it always logs unless you set theis to false. To turn off logging add "options":"logPush": "false"}
 - logPushFileName: you can change this to a filename you want to have the push logs sent to. The default is push.log in the libraries top folder. It can be the same as the pull log file if you want.  The name can be relative or absolute. To set it to your c: add "options":"logPushFileName": "C:/wcmsync.log"} 
 - logPull: you can set this to false.  By default it always logs unless you set theis to false.  To turn off logging add "options":"logPush": "false"}
