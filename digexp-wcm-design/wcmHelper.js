@@ -128,16 +128,16 @@ init = function(host, port, contentPath, user, password, secure, wcmDir, options
         if(!available)
             deferred.reject(libTitle + ' is not available check for correct server');
         else{
+            Q.longStackSupport = true;
+            var totalCount = 0;
+            var libSettings = utils.getSettings(wcmCwd + libTitle + Path.sep);
+            options = utils.getMergerdOptions(options || {}, libSettings);
             if(options == undefined || options.logPullFileName == undefined)
                utils.setLoggerPullFileName(wcmCwd + libTitle + '/pull.log');
             else
                  utils.setLoggerPullFileName(options.logPullFileName);
             if(options == undefined || options.logPull == undefined || options.logPull == true)
                 utils.loggerPull.log('========== Pulled from server: ' + curHost + ' ==========' + String.fromCharCode(13));
-            Q.longStackSupport = true;
-            var totalCount = 0;
-            var libSettings = utils.getSettings(wcmCwd + libTitle + Path.sep);
-            options = utils.getMergerdOptions(options || {}, libSettings);
             createFolder(wcmCwd + libTitle);
             createFolder(wcmCwd + libTitle + Path.sep + wcmRequests.cPresentationTemplates);
             createFolder(wcmCwd + libTitle + Path.sep + wcmRequests.cComponents);
@@ -340,16 +340,16 @@ init = function(host, port, contentPath, user, password, secure, wcmDir, options
         if(!available)
             deferred.reject(libTitle + ' is not available check for correct server');
         else{
+            Q.longStackSupport = true;
+            var cDate = undefined;
+            var libSettings = utils.getSettings(wcmCwd + libTitle + Path.sep);
+            options = utils.getMergerdOptions(options || {}, libSettings);
             if(options == undefined || options.logPushFileName == undefined)
                 utils.setLoggerPushFileName(wcmCwd + libTitle + '/push.log');
             else
                 utils.setLoggerPushFileName(options.logPushFileName);
             if(options == undefined || options.logPush == undefined || options.logPush == true)
                 utils.loggerPush.log('========== Pushed to server: ' + curHost + ' ==========' + String.fromCharCode(13));
-            Q.longStackSupport = true;
-            var cDate = undefined;
-            var libSettings = utils.getSettings(wcmCwd + libTitle + Path.sep);
-            options = utils.getMergerdOptions(options || {}, libSettings);
            // then only push updated files, so determine the date
             if (bForce == undefined || bForce == false) {
                 if (libSettings.timePushed && libSettings.timePulled) {

@@ -91,6 +91,16 @@ getMergerdOptions = function(options, settings){
             options.filterComponentId = settings.options.filterComponentId;
         if(settings.options.trial != undefined)
             options.trial = settings.options.trial;
+        if(settings.options.project != undefined)
+            options.project = settings.options.project;
+        if(settings.options.logPushFileName != undefined)
+            options.logPushFileName = settings.options.logPushFileName;
+        if(settings.options.logPullFileName != undefined)
+            options.logPullFileName = settings.options.logPullFileName;
+        if(settings.options.logPush != undefined)
+            options.logPush = settings.options.logPush;
+        if(settings.options.logPull != undefined)
+            options.logPull = settings.options.logPull;
     };   
     return options;
 };
