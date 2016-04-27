@@ -1293,6 +1293,10 @@ function getFolderForType(type) {
         rVal = cWorkflowItems + Path.sep + cWorkflowStages;
         break;
     }
+        case wcmTypes.folder:{
+            rVal = "";
+            break;
+        }
     default: {
         rVal = 'Components';
         break;
